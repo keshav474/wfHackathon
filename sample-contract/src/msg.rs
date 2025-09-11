@@ -1,4 +1,21 @@
-use cosmwasm_std::Binary;
+use cosmwasm_schema::QueryResponses;
+use cosmwasm_std::{Addr, Binary};
+use sha2::{Sha256, Digest};
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
+pub struct OracleDataResponse {
+    pub data: Option<String>,
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
+pub struct OraclePubkeyResponse {
+    pub pubkey: Binary,
+    pub key_type: String,
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
+pub struct AdminResponse {
+    pub admin: Addr,
+}
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
@@ -18,8 +35,15 @@ pub enum ExecuteMsg {
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 #[serde(rename_all = "snake_case")]
+#[derive(QueryResponses)]
 pub enum QueryMsg {
+    /// Returns: OracleDataResponse
+    #[returns(OracleDataResponse)]
     GetOracleData {},
+    /// Returns: OraclePubkeyResponse
+    #[returns(OraclePubkeyResponse)]
     GetOraclePubkey {},
+    /// Returns: AdminResponse
+    #[returns(AdminResponse)]
     GetAdmin {},
 }

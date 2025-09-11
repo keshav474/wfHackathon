@@ -1,11 +1,10 @@
-# 🚀 Hackathon Prerequisites Setup Guide
+# 🚀 Hackathon Setup Guide
 
 This guide will help you install all the necessary tools to **run a Cosmos SDK chain** and **develop & deploy CosmWasm smart contracts**.  
 
-Please follow the steps carefully in the order given.  
+Please follow the steps carefully in the order given. 
 
----
-
+# Prerequisites 
 ## 1. Install Go
 - Download the appropriate installer: [https://go.dev/dl/](https://go.dev/dl/)
 - Follow the on-screen instructions to complete installation.
@@ -15,6 +14,7 @@ Please follow the steps carefully in the order given.
 ## 2. Install Git
 - Download Git for Windows: [https://git-scm.com/downloads/win](https://git-scm.com/downloads/win)
 - Install with default settings.
+- Unless mentioned otherwise, use **Git Bash** for running the commands
 
 ---
 
@@ -24,13 +24,26 @@ Please follow the steps carefully in the order given.
   👉 [Cosmy Wasmy Extension](https://marketplace.visualstudio.com/items?itemName=spoorthi.cosmy-wasmy)
 
 📂 Extension GitHub: [https://github.com/spoo-bar/cosmy-wasmy](https://github.com/spoo-bar/cosmy-wasmy)
-
+- Add this to `cosmywasmy.chains` within `settings.json` of vscode
+```json
+{
+    "configName": "wfchain",
+    "chainId": "testing",
+    "chainEnvironment": "localnet",
+    "addressPrefix": "wasm",
+    "rpcEndpoint": "http://localhost:26657",
+    "defaultGasPrice": "0",
+    "chainDenom": "ustake"
+},
+```
+- To open `settings.json`, open VS Code settings, search for cosmywasmy and click on `Edit in settings.json` 
+- Click on the box in the bottom-left of the editor and click on wfchain in the prompt that pops up.
 ---
 
 ## 4. Install Rust
 - Download and run the installer: [https://www.rust-lang.org/tools/install](https://www.rust-lang.org/tools/install)  
   (Download the `rustup-init.exe` file)
-- After installation, run the following commands in **Command Prompt (cmd)**:
+- After installation, run the following commands in Terminal:
 
 ```bash
 rustup install 1.86
@@ -51,7 +64,7 @@ cargo install cosmwasm-check
 wsl --install
 ```
 
-⚠️ If you face WSL installation issues, run:
+⚠️ If you face WSL installation issues, run in **cmd** with admin privileges:
 
 ```bash
 bcdedit /set hypervisorlaunchtype auto
@@ -97,15 +110,45 @@ docker volume rm -f wasmd_data
 
 * Download the prebuilt Node.js + npm binaries: [https://nodejs.org/en/download/](https://nodejs.org/en/download/)
 * Complete installation with default options.
+* Install `cosmwasm-ts-codegen`: 
+```bash
+npm install -g @cosmwasm/ts-codegen@1.6.0
+```
 
 ---
+
+# Compiling and deploying the Smart Contract
+## Compile the smart contract
+Change working directory
+```bash
+cd sample-contract
+```
+Build WASM
+```bash
+RUSTFLAGS="-C link-arg=-s" cargo wasm
+```
+Confirm `sample_contract.wasm` is listed
+```bash
+ls target/wasm32-unknown-unknown/release/sample_contract.wasm
+```
+Optimize WASM
+```bash
+wasm-opt -Os --signext-lowering ./target/wasm32-unknown-unknown/release/sample_contract.wasm -o ./target/wasm32-unknown-unknown/release/sample_contract_opt.wasm
+```
+Validate sample_contract_opt.wasm
+```bash
+cosmwasm-check ./target/wasm32-unknown-unknown/release/sample_contract_opt.wasm
+```
+
+## Deploy the smart contract
+By now the optimized contract should be ready. The chain also must be running in the background.
 
 ## payloads
 
 ```json
 instantiate
 {
-    "oracle_pubkey": "A/NErFglPqNVghcdRNo2f983YfPIziZE0xVWBb5phEXj",
+    "oracle_pubkey": "AjrX9BclyF9K8drtbJ+0+FBbGsS4Pg+UjPiYfBT7nRh2",
     "oracle_key_type": "secp256k1"
 }
 
@@ -121,6 +164,24 @@ execute
   }
 }
 
+{
+    "update_oracle": {
+        "new_pubkey": "AjrX9BclyF9K8drtbJ+0+FBbGsS4Pg+UjPiYfBT7nRh2",
+        "new_key_type": "secp256k1"
+    }
+}
+```
+
+```bash
+RUSTFLAGS="-C link-arg=-s" cargo wasm
+wasm-opt -Os --signext-lowering ./target/wasm32-unknown-unknown/release/sample_contract.wasm -o ./target/wasm32-unknown-unknown/release/sample_contract_opt.wasm
+cosmwasm-check ./target/wasm32-unknown-unknown/release/sample_contract_opt.wasm 
+
+cosmwasm-ts-codegen generate \
+    --plugin client \
+    --schema ./schema \
+    --out ../oracle-service/src/sdk \
+    --name oracle
 ```
 
 # ✅ You are now ready!

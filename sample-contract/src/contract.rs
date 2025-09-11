@@ -2,9 +2,9 @@ use cosmwasm_std::{
     entry_point, to_binary, Addr, BankMsg, Binary, Coin, Deps, DepsMut, Env, Event, MessageInfo, Response, StdError, StdResult
 };
 use cw2::set_contract_version;
-// use cosmwasm_crypto::{secp256k1_verify, ed25519_verify};
+use sha2::{Digest, Sha256};
 
-use crate::msg::{ExecuteMsg, InstantiateMsg, QueryMsg};
+use crate::msg::{ExecuteMsg, InstantiateMsg, OracleDataResponse, QueryMsg};
 use crate::state::{ADMIN, ORACLE_DATA, ORACLE_PUBKEY, ORACLE_PUBKEY_TYPE, parse_key_type};
 
 const CONTRACT_NAME: &str = "crates.io:oracle-contract";
@@ -73,7 +73,7 @@ fn execute_send(
         amount: funds.clone(),
     };
 
-    let event = Event::new("wasm_send")
+    let event = Event::new("send")
         .add_attribute("action", "send")
         .add_attribute("from", info.sender.to_string())
         .add_attribute("to", recipient_addr.to_string())
@@ -99,11 +99,13 @@ fn execute_oracle_update(
     let parsed = parse_key_type(&key_type)
         .ok_or_else(|| StdError::generic_err("stored oracle_key_type invalid"))?;
 
+    let result = Sha256::digest(&data).to_vec();
+
     let verified = match parsed {
-        "secp256k1" => deps.api.secp256k1_verify(pubkey.as_slice(), msg_bytes, signature.as_slice())
+        "secp256k1" => deps.api.secp256k1_verify(&result, signature.as_slice(), pubkey.as_slice())
             .map_err(|e| StdError::generic_err(format!("secp256k1 verify error: {}", e)))?,
-        "ed25519" => deps.api.ed25519_verify(pubkey.as_slice(), msg_bytes, signature.as_slice())
-            .map_err(|e| StdError::generic_err(format!("ed25519 verify error: {}", e)))?,
+        // "ed25519" => deps.api.ed25519_verify(pubkey.as_slice(), msg_bytes, signature.as_slice())
+        //     .map_err(|e| StdError::generic_err(format!("ed25519 verify error: {}", e)))?,
         _ => false,
     };
 
@@ -113,7 +115,7 @@ fn execute_oracle_update(
 
     ORACLE_DATA.save(deps.storage, &data)?;
 
-    let event = Event::new("wasm_oracle_data_update")
+    let event = Event::new("oracle_data_update")
         .add_attribute("action", "oracle_data_update")
         .add_attribute("sender", info.sender.to_string())
         .add_attribute("data", data);
@@ -136,7 +138,7 @@ fn execute_update_oracle(
     if let Some(kt) = &new_key_type {
         if parse_key_type(kt).is_none() {
             return Err(StdError::generic_err(
-                "invalid new_key_type: use 'secp256k1' or 'ed25519'",
+                "invalid new_key_type: use 'secp256k1'",
             ));
         }
         ORACLE_PUBKEY_TYPE.save(deps.storage, kt)?;
@@ -146,7 +148,7 @@ fn execute_update_oracle(
 
     let saved_type = ORACLE_PUBKEY_TYPE.load(deps.storage)?;
 
-    let event = Event::new("wasm_oracle_admin_update")
+    let event = Event::new("oracle_admin_update")
         .add_attribute("action", "oracle_update")
         .add_attribute("admin", admin.to_string())
         .add_attribute("new_pubkey", new_pubkey.to_base64())
@@ -158,19 +160,21 @@ fn execute_update_oracle(
 
 #[entry_point]
 pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> StdResult<Binary> {
+    use crate::msg::{AdminResponse, OracleDataResponse, OraclePubkeyResponse};
+
     match msg {
         QueryMsg::GetOracleData {} => {
             let data = ORACLE_DATA.may_load(deps.storage)?;
-            to_binary(&data)
+            to_binary(&OracleDataResponse { data })
         }
         QueryMsg::GetOraclePubkey {} => {
             let pk = ORACLE_PUBKEY.load(deps.storage)?;
             let kt = ORACLE_PUBKEY_TYPE.load(deps.storage)?;
-            to_binary(&(pk, kt))
+            to_binary(&OraclePubkeyResponse { pubkey: pk, key_type: kt })
         }
         QueryMsg::GetAdmin {} => {
             let admin = ADMIN.load(deps.storage)?;
-            to_binary(&admin)
+            to_binary(&AdminResponse { admin })
         }
     }
 }
