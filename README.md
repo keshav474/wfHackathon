@@ -191,3 +191,95 @@ With the above setup, you can:
 * Run a local Cosmos SDK blockchain.
 
 
+# Public Crypto Data
+
+See article from GCP: https://cloud.google.com/blog/products/data-analytics/introducing-six-new-cryptocurrencies-in-bigquery-public-datasets-and-how-to-analyze-them
+
+## Pulling and preparing data
+We have extracted samples from bitcoin (`bigquery-public-data.crypto_bitcoin`) and ethereum (`bigquery-public-data.crypto_ethereum`) datasets from BigQuery and have uploaded to https://storage.googleapis.com/blockchain-hackathon/hackathon.zip. 
+* A 1% sample was queried from each table
+* Ethereum traces and Bitcoin transactions were limited further due to the size of the response.
+
+Download and extract the folder (and sub folders) to `./data`. Tree folder should look like:
+
+```
+wfHackathon
+├── data
+    ├── btc
+        ├── btc-inputs1
+        ├── btc-inputs2
+        ├── btc-inputs3
+        ├── btc-inputs4
+        ├── btc-inputs5
+        ├── btc-outputs1
+        ├── btc-outputs2
+        ├── btc-outputs3
+        ├── btc-outputs4
+        ├── btc-blocks000000000000.csv
+        └── btc-transactions000000000000.csv
+    ├── eth
+        ├── eth-balances
+        ├── eth-blocks
+        ├── eth-logs1
+        ├── eth-logs2
+        ├── eth-logs3
+        ├── eth-logs4
+        ├── eth-logs5
+        ├── eth-logs6
+        ├── eth-logs7
+        ├── eth-sessions
+        ├── eth-token_transfers
+        ├── eth-transactions1
+        ├── eth-transactions2
+        ├── eth-transactions3
+        ├── eth-transactions4
+        ├── eth-transactions5
+        ├── eth-transactions6
+        ├── eth-transactions7
+        ├── eth-contracts000000000000.csv 
+        ├── eth-load_metadata.csv  
+        ├── eth-tokens000000000000.csv 
+        └── eth-traces000000000000.csv
+    └── cleanup.sh
+└── docker
+...
+```
+Two folders will need cleaned up (filenames appended with .csv)
+```bash
+cd data
+./cleanup.sh
+```
+
+Pull postgres image
+```bash
+docker pull postgres:15
+```
+
+Run postgres Container. This command will execute the scripts under ./db-scripts (create databases/schema and load sample data). To load all data, modify [./db-scripts/03-load-data.sh](./db-scripts/03-load-data.sh). 
+```bash
+docker run -d --name postgres -v $(pwd)/data:/crypto_data \
+  -v $(pwd)/db-scripts:/docker-entrypoint-initdb.d/ \
+  -e POSTGRES_USER=postgres -e POSTGRES_DB=postgres -e POSTGRES_PASSWORD=password \
+  postgres:15
+```
+
+Once your container is running, exec into it:
+```bash
+docker exec -it postgres bash
+```
+
+Then you can run verify db was populated:
+```bash
+psql -h localhost -U postgres -d bitcoin
+
+# confirm tables are listed
+\d
+
+# query from tables. select * ...
+```
+
+Cleanup:
+```bash
+docker stop postgres
+```
+Likely will want to avoid running `docker rm postgres` once all data is loaded.
