@@ -80,7 +80,7 @@ Reference: [WSL Issue Fix](https://github.com/microsoft/WSL/issues/9652#issuecom
 * Pull the prebuilt blockchain image:
 
 ```bash
-docker pull soumithbasina/wfblockchain:latest
+docker pull --platform linux/amd64 soumithbasina/wfblockchain:latest
 ```
 
 * Initialize the chain:
@@ -115,9 +115,16 @@ docker volume rm -f wasmd_data
 npm install -g @cosmwasm/ts-codegen@1.6.0
 ```
 
----
+## 8. Install Postman
+* Download the binary: [https://www.postman.com/downloads/](https://www.postman.com/downloads/)
+* Import the Postman Collection found in `oracle-service` directory.
 
 # Compiling and deploying the Smart Contract
+We have created a sample cosmwasm smart contract with some basic functionality. 
+* `Send()` is a basic wrapper around `BankMsg`. Sends the tokens to a receiver's address.
+* `OracleDataUpdate()` updates the data stored in smart contract state with the new provided string. Also verifies signature to ensure the data is signed by oracle.
+* `UpdateOracle()` updates the public key of the oracle.
+
 ## Compile the smart contract
 Change working directory
 ```bash
@@ -219,13 +226,44 @@ Similarly you can run the other execute using the following payloads.
 }
 ```
 
-# ✅ You are now ready!
+# Building and running oracle-service
+## Generating a cosmjs client for the contract
+Command for installing `cosmwasm-ts-codegen` should be in the prerequisites. Ensure it is installed.
 
-With the above setup, you can:
+Make sure to run this after making changes to the contract and deploying it so that the service can interact with the contract properly.
 
-* Run a local Cosmos SDK blockchain.
-* Develop and deploy a cosmwasm smart contract.
+Go to the contract directory and build schema
+```bash
+cd sample-contract
+cargo schema
+```
 
+Run the cosmwasm-ts-codegen command to generate client from the JSON schema file.
+```bash
+cosmwasm-ts-codegen generate \
+    --plugin client \
+    --schema ./schema \
+    --out ../oracle-service/src/sdk \
+    --name oracle
+```
+Answer the prompt accordingly
+```bash
+? [bundle] enable bundle? No
+```
+The newly generated files should be in `oracle-service/src/sdk`
+
+## Running and interacting with the oracle service
+Run the oracle service
+```bash
+cd oracle-service
+npx ts-node src/app.ts
+```
+Ensure the chain is also running.
+
+Open Postman, ensure the collection is imported.
+Two types of requests there - `get-oracle-data` and `update-oracle-data`.
+
+Run these to check if the connection is working. 
 
 # Public Crypto Data
 
@@ -319,3 +357,12 @@ Cleanup:
 docker stop postgres
 ```
 Likely will want to avoid running `docker rm postgres` once all data is loaded.
+
+# ✅ You are now ready!
+
+With the above setup, you can:
+
+* Run a local Cosmos SDK blockchain.
+* Develop and deploy a cosmwasm smart contract.
+* Build and run the oracle service.
+* Pull data into a local Postgres instance. 
