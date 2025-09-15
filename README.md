@@ -141,29 +141,76 @@ cosmwasm-check ./target/wasm32-unknown-unknown/release/sample_contract_opt.wasm
 ```
 
 ## Deploy the smart contract
-By now the optimized contract should be ready. The chain also must be running in the background.
+By now the optimized contract should be ready, We will be deploying this optimized contract on the local blockchain.
 
-## payloads
+### Import accounts 
+Let's first import the accounts into the cosmy wasmy so we can use them further.
+Right click on the Beaker.toml file and click Sync Beaker config.
 
+![Sync Beaker Config](./docs/sync_beaker_config.jpeg "Sync Beaker Config")
+
+### Upload a smart contract
+
+Let's first select the admin account for deploying and instantiating the Smart acoount. 
+
+![Select admin account](./docs/select_account.jpeg "Select admin account")
+
+The, right click on sample_contract_opt.wasm and click Upload Contract.
+
+![Upload Contract](./docs/upload_contract.jpeg "Upload Contract")
+
+Output would be something like this, Note down the code_id 
+
+![Upload contract output](./docs/upload_contract_output.jpeg "Upload contract output")
+
+### Instantiate the smart contract
+
+Now let's instantiate the smart contract, select the admin account enter the code_id in respective box and provide the conntract label and use the follwing json as the payload and then click on Initialize.
 ```json
-instantiate
 {
     "oracle_pubkey": "AjrX9BclyF9K8drtbJ+0+FBbGsS4Pg+UjPiYfBT7nRh2",
     "oracle_key_type": "secp256k1"
 }
+```
+![Instantiate](./docs/instantiate.jpeg "Instantiate")
 
-queries
+Output would be something like this, note down the contractAddress.
+![Instantiate Output](./docs/instantiate_output.jpeg "Instantiate Output")
+
+### Import the smart contract
+
+Click on the + in CONTRACT row and paste your smart contract address obtained from the previous step and click enter. Your contract will now be imported inside the cosmy wasmy extension and can be used then for interacting with the contract. It will appear under the CONTRACT tab with the name we specified while instantiating it.
+
+![Import Contract](./docs/import_contract.jpeg "Import Contract")
+
+### Query the smart contract
+
+Now let's query the smart contract admin. Put the follwing json as payload.
+```json
+{"get_admin": {}}
+```
+![Query Admin](./docs/query_admin.jpeg "Query Admin")
+
+Similarly you can run the other queries using the following payloads.
+```json
 {"get_oracle_data": {}}
 {"get_oracle_pubkey": {}}
-{"get_admin": {}}
+```
 
-execute 
+### Execute the smart contract
+
+Now let's execute the send on the smart contract. Put the follwing json as payload and put the amout to be transferred in the respective box. You can change the reciepient in the payload and select the sender from the ACCOUNT tab and the smart contract from CONTRACT tab.
+```json
 {
   "send": {
     "recipient": "wasm175vkrltwkfshvqa539xzu7gwqjppz8p5ltuj4x"
   }
 }
+```
+![Execute Send](./docs/execute_send.jpeg "Execute Send")
 
+Similarly you can run the other execute using the following payloads.
+```json
 {
     "update_oracle": {
         "new_pubkey": "AjrX9BclyF9K8drtbJ+0+FBbGsS4Pg+UjPiYfBT7nRh2",
@@ -172,23 +219,12 @@ execute
 }
 ```
 
-```bash
-RUSTFLAGS="-C link-arg=-s" cargo wasm
-wasm-opt -Os --signext-lowering ./target/wasm32-unknown-unknown/release/sample_contract.wasm -o ./target/wasm32-unknown-unknown/release/sample_contract_opt.wasm
-cosmwasm-check ./target/wasm32-unknown-unknown/release/sample_contract_opt.wasm 
-
-cosmwasm-ts-codegen generate \
-    --plugin client \
-    --schema ./schema \
-    --out ../oracle-service/src/sdk \
-    --name oracle
-```
-
 # ✅ You are now ready!
 
 With the above setup, you can:
 
 * Run a local Cosmos SDK blockchain.
+* Develop and deploy a cosmwasm smart contract.
 
 
 # Public Crypto Data
