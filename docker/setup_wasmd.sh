@@ -32,6 +32,8 @@ echo "artist still shield fit embark same follow lounge model dumb valid half sn
   | wasmd keys add charlie --recover $KEYRING
 echo "enemy flower party waste put south clip march victory breeze oxygen cram hospital march enlist black october surprise across wage bomb spawn describe heavy" \
   | wasmd keys add admin --recover $KEYRING
+echo "leopard run palm busy weasel comfort maze turkey canyon rural response predict ball scale coil tape organ dizzy paddle mystery fluid flight capital thing" \
+  | wasmd keys add oracle --recover $KEYRING
 
 # -----------------------
 # Create validator key (new)
